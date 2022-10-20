@@ -24,11 +24,10 @@ include std/sequence.e
 include std/text.e
 include std/net/url.e as url
 
-
+-- Init
 ifdef WINDOWS then 	
 	constant msvcrt = open_dll( "msvcrt.dll" ) 
-	constant _setmode = define_c_func( msvcrt, "_setmode", {C_INT,C_INT}, C_INT ) 
-	
+	constant _setmode = define_c_func( msvcrt, "_setmode", {C_INT,C_INT}, C_INT )	
 	global constant O_BINARY = 0x008000 
 	
 	function set_mode( integer fn, integer mode ) 
@@ -36,6 +35,7 @@ ifdef WINDOWS then
 	end function 
 
 end ifdef
+
 
 /*
 if equal( request_method, "POST" ) then 
@@ -90,18 +90,19 @@ end function
 
 
 
--- Return a sequence that contains any data from html form
-function raw_data()
+-- Return a sequence that contains data from html form
+-- Not separated variables.
+function cgi_data()
 	-- Check for method
 	sequence content_type = lower(environ_string("CONTENT_TYPE"))
 	
 	if equal(upper(method()), "GET") then
-		return url:decode(getenv("QUERY_STRING"))
+		return string_format(environ_string("QUERY_STRING"))
 	elsif  equal(upper(method()), "POST") then
 		-- Check if multipart or not
 		if equal( content_type, "application/x-www-form-urlencoded") then
 			-- simple form
-			return post_data()
+			return string_format(post_data())
 		elsif equal(content_type[1..20], "multipart/form-data;") then	
 		return "Multipart!!!"
 		
@@ -116,9 +117,20 @@ function raw_data()
 end function
 
 
+-- urldecode and split with & and =
+function string_format(sequence raw)
+	raw = url:decode(raw) --url decode.
+	raw = split(raw, "&") --and split variables.
+	for i=1 to length(raw) do
+		raw[i] = split(raw[i], "=")
+	end for
+	return raw
+end function
+
+
 global function form_data()
-	return raw_data()
-	--That is raw data.  Must to process more...
-		--url decode and split variables.
+
+	return cgi_data()  
+
 end function
 

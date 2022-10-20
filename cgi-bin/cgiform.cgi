@@ -47,12 +47,17 @@ printf( STDOUT, "Content-type: text/html\n\n" )
 printf( STDOUT, "<html><head> </head><body><code>\n" ) 
 
 object myvars = form_data() 
-puts (1, myvars)
+pretty_print(1, myvars)
  
 sequence request_method = environ_string( "REQUEST_METHOD" ) 
 puts(1, "<br>Request_method = "& request_method)
 
 puts (1, "<br>Content Type = "& environ_string("CONTENT_TYPE"))
+
+puts( STDOUT, "</code></pre>\n" ) 
+
+puts( 1, "</body></html>\n" ) 
+
 
 /*
     printf( STDOUT, "<pre><code>\n" ) 
@@ -111,7 +116,3 @@ puts (1, "<br>Content Type = "& environ_string("CONTENT_TYPE"))
 	puts(1, "\nNumero de tokens = ")
 	print(1, length(tokenized))
  */
- printf( STDOUT, "</code></pre>\n" ) 
-
- 
-puts( 1, "</body></html>\n" ) 
