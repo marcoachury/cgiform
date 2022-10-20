@@ -23,6 +23,7 @@ include std/search.e
 include std/sequence.e
 include std/text.e
 include std/net/url.e as url
+include std/types.e
 
 -- Init
 ifdef WINDOWS then 	
@@ -89,6 +90,10 @@ function post_data()
 end function
 
 
+function multipart_parse()
+	return "Multipart!!!"
+end function
+
 
 -- Return a sequence that contains data from html form
 -- Not separated variables.
@@ -103,17 +108,16 @@ function cgi_data()
 		if equal( content_type, "application/x-www-form-urlencoded") then
 			-- simple form
 			return string_format(post_data())
-		elsif equal(content_type[1..20], "multipart/form-data;") then	
-		return "Multipart!!!"
-		
-		else
+		elsif equal(content_type[1..20], "multipart/form-data;") then
+			return multipart_parse()
+		else --Error.  abort?
 			return "Error, unexpected Content-Type"
 		end if
 	else  -- Not called as CGI
 		-- abort ??
 		return "Error, unexpected Method"
 	end if
-	-- Check query string
+
 end function
 
 
@@ -129,8 +133,44 @@ end function
 
 
 global function form_data()
-
 	return cgi_data()  
+end function
 
+global function tablify(sequence data, sequence toptions="", sequence thead="", sequence tfoot="") -- Convert a sequence on an html table
+	sequence tabl = "\n<table "& toptions & ">\n"
+	
+	-- Add <thead>
+	if not string(thead) then
+		if string(thead[1]) then
+			tabl = tabl & "<thead>"
+			for i=1 to length(thead) do
+				tabl = tabl & "<td>" & thead[i] & "</td>"
+			end for
+			tabl = tabl & "</thead>"
+		end if
+	end if
+	
+	if string(data) then
+		if string(thead) then
+			tabl = tabl & "<thead><td>" & thead & "</td></thead>"
+		end if
+	
+		tabl = tabl & "<tr><td>" & data & "</td></tr></table>"
+		return tabl
+	end if
+	
+	for row = 1 to length(data) do
+		tabl = tabl & "\n\n<tr>" 
+		for cell = 1 to length(data[row]) do
+			tabl = tabl & "<td>" & data[row][cell] & "</td>\n"
+		end for
+		
+		tabl = tabl & "</tr>" 
+	end for
+	
+	tabl = tabl & "\n</table>\n\n"
+	--puts(1, tabl) --debug
+	return tabl
+	
 end function
 

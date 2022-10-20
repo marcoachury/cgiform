@@ -44,19 +44,20 @@ global constant SERVER_VARS = {
 
  
 printf( STDOUT, "Content-type: text/html\n\n" ) 
-printf( STDOUT, "<html><head> </head><body><code>\n" ) 
+printf( STDOUT, "<html><head> </head><body>\n" ) 
 
 object myvars = form_data() 
-pretty_print(1, myvars)
+--pretty_print(1, myvars)
+
+puts(1, tablify(myvars, "border = 1 " ,{"Field Name", "Field value"}, ""))
  
 sequence request_method = environ_string( "REQUEST_METHOD" ) 
 puts(1, "<br>Request_method = "& request_method)
 
 puts (1, "<br>Content Type = "& environ_string("CONTENT_TYPE"))
 
-puts( STDOUT, "</code></pre>\n" ) 
 
-puts( 1, "</body></html>\n" ) 
+puts( 1, "\n</body></html>\n\n" ) 
 
 
 /*
@@ -83,7 +84,7 @@ puts( 1, "</body></html>\n" )
 	--pretty_print (STDOUT, bytes)
 	--puts (STDOUT, bytes)
 	*/
-	puts(1, "\n\n\n")
+
 	
 	/*
 	-- Experimento para extraer datos de los bytes 
