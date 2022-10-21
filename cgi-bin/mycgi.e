@@ -37,23 +37,11 @@ ifdef WINDOWS then
 
 end ifdef
 
+-- To stablish complete set of variables?
+-- To put a prefix like CGI_CONTENT_TYPE ?
+constant CONTENT_TYPE = lower(environ_string("CONTENT_TYPE"))
+constant CONTENT_LENGTH = to_number(environ_string("CONTENT_LENGTH"))
 
-/*
-if equal( request_method, "POST" ) then 
- 
-    sequence content_type = environ_string( "CONTENT_TYPE" ) 
-    integer content_length = environ_string( "CONTENT_LENGTH") 
-
-	integer donde = match("boundary=", content_type) + 9
-	sequence boundary = content_type[donde..$]
-	integer boundary_length = length(boundary)
-*/
-
-/*  --Set standar input as "binary"
-    ifdef WINDOWS then
-		set_mode( STDIN, O_BINARY ) 
-	end ifdef
-*/
 
 --Return environmental string, 
 --if not declared, return the optional second parameter
@@ -91,7 +79,14 @@ end function
 
 
 function multipart_parse()
-	return "Multipart!!!"
+	sequence boundary = CONTENT_TYPE[31..$]
+	--integer boundary_length = length(boundary)
+	ifdef WINDOWS then
+		set_mode( STDIN, O_BINARY ) 
+	end ifdef
+	object bytes = get_bytes( STDIN, CONTENT_LENGTH )
+	
+	return bytes
 end function
 
 
@@ -99,16 +94,16 @@ end function
 -- Not separated variables.
 function cgi_data()
 	-- Check for method
-	sequence content_type = lower(environ_string("CONTENT_TYPE"))
+	
 	
 	if equal(upper(method()), "GET") then
 		return string_format(environ_string("QUERY_STRING"))
 	elsif  equal(upper(method()), "POST") then
 		-- Check if multipart or not
-		if equal( content_type, "application/x-www-form-urlencoded") then
+		if equal( CONTENT_TYPE, "application/x-www-form-urlencoded") then
 			-- simple form
 			return string_format(post_data())
-		elsif equal(content_type[1..20], "multipart/form-data;") then
+		elsif equal(CONTENT_TYPE[1..30], "multipart/form-data; boundary=") then
 			return multipart_parse()
 		else --Error.  abort?
 			return "Error, unexpected Content-Type"
@@ -136,11 +131,13 @@ global function form_data()
 	return cgi_data()  
 end function
 
-global function tablify(sequence data, sequence toptions="", sequence thead="", sequence tfoot="") -- Convert a sequence on an html table
+-- Function Tablify
+-- Convert a sequence on an html table
+global function tablify(sequence data, sequence toptions="", sequence thead="", sequence tfoot="") 
 	sequence tabl = "\n<table "& toptions & ">\n"
 	
 	-- Add <thead>
-	if not string(thead) then
+	if not string(thead) then -- Senquence, for several columns
 		if string(thead[1]) then
 			tabl = tabl & "<thead>"
 			for i=1 to length(thead) do
