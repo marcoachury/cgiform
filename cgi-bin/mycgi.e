@@ -11,6 +11,12 @@
 -- https://openeuphoria.org/forum/136915.wc?last_id=137102
 -- Greg Haberek
 
+-- Multipart parser from
+--LibCGI v1.5 - Common Gateway Interface routines for Euphoria
+--(9.11.99) Buddy Hyllberg <budmeister1@juno.com>
+
+
+
 
 
 include std/dll.e 
@@ -79,6 +85,39 @@ function post_data()
 end function
 
 
+global function parse_multipart_content( sequence content )
+  atom q, z, char, pair_sep, string_sep
+  sequence whitespace, value_sep, fieldbuf, charbuf
+  fieldbuf = {}  charbuf = {}
+  pair_sep = ';'  whitespace = {' ','\n'}  string_sep = '"'  value_sep = {'=',':'}
+  q = 1
+  while q <= length(content) do
+    char = content[q]
+    if equal(char, pair_sep) then
+      fieldbuf = append(fieldbuf, charbuf)
+      charbuf = {}
+      q += 1
+    elsif equal(char, string_sep) then
+      z = match("\"", content[q+1..length(content)])
+      z = q + z
+      fieldbuf = append(fieldbuf, content[q+1..z-1])
+      q = z+1
+    elsif find(char, whitespace) then
+      q += 1
+    elsif find(char, value_sep) then
+      fieldbuf = append(fieldbuf, charbuf)
+      charbuf = {}
+      q += 1
+    else
+      charbuf &= char
+      q += 1
+    end if
+  end while
+  fieldbuf = append(fieldbuf, charbuf)
+  return fieldbuf
+end function
+
+
 function multipart_parse()
 	sequence BOUNDARY = CONTENT_TYPE[31..$]
 	sequence item_limit = {45,45} & BOUNDARY
@@ -87,53 +126,78 @@ function multipart_parse()
 		set_mode( STDIN, O_BINARY ) 
 	end ifdef
 	sequence new_data = get_bytes( STDIN, CONTENT_LENGTH )
-	puts(1, "Length New_data = " & sprint(length(new_data) & "\n<br>"))
-	if string(new_data) then puts (1, "Is a string!!") end if
-	new_data = split(new_data, item_limit)
-	puts(1, "Length New_data = " & sprint(length(new_data)& "\n<br>"))
-	new_data = new_data[2..$-1]
 	
+	--return parse_multipart_content(new_data)
+	
+	
+	printf(1, "Length New_data 1 = %d \n<br>", { length(new_data) })
+	if string(new_data) then puts (1, "Is a string!!<br>\n") end if
+	new_data = split(new_data, item_limit)
+	new_data = new_data[2..$-1]  -- First and last item are useless
+	
+	printf(1, "Length New_data 1 = %d [1] %d [2] %d\n<br>", { length(new_data), length(new_data[1]), length(new_data[2]) })
+	
+	-- post_fields = {fieldname, content, filename}
+	sequence post_fields = {}
+	sequence field =  {{},{},{}}
+	integer begin_field
+	integer end_field
 	
 	for i = 1 to length (new_data) do
+		post_fields=append(post_fields, field)
 		if equal(new_data[i][1..40], "\r\nContent-Disposition: form-data; name=\"") then
-			new_data[i]= new_data[i][41..$]
-			--new_data[i]= split(new_data[i], {34,13,10,13,10})
-			--new_data[i][1]= split_any(new_data[i][1], {"\"; filename=\"", {34,13,10}, {34,13,10,13,10}})
-			/*
+			new_data[i]= new_data[i][41..$] --Trim header
+			
+			end_field = find(34, new_data[i]) -1 --Look for '='
+			
+			puts(1, end_field) --DEBUG
+			post_fields[i][1] = new_data[i][1..end_field]
+			
+			if equal(new_data[i][end_field+1..end_field+5], {34,13,10,13,10}) then -- text field
+				post_fields[i][2] = new_data[i][end_field+6..$-2]
+			elsif equal(new_data[i][end_field+1..end_field+13], "\"; filename=\"") then-- File field
+				puts(1, "Filename located")
+				begin_field = end_field+14
+				
+				end_field = find(34, new_data[i], begin_field) -1 --Look for '='
+				
+				post_fields[i][3] = new_data[i][begin_field..end_field]
+				
+				begin_field = find({13,10,13,10}, new_data[i], end_field) +4
+
+				post_fields[i][2] = new_data[i][begin_field..$-2]
+				
+				--post
+						
+				--new_data[i]=new_data[i][end_field+1..$]
+			end if
+			
+			--new_data[i]= split(new_data[i], {34,13,10,13,10}) --
+
+				--	printf(1, "Length New_data 1 = %d [1] %d [2] [1][1] %d [1][2] %d [1,1,1] %d [1,1,2] %d\n<br>", { length(new_data), length(new_data[1]), length(new_data[2]), length(new_data[1][1]), length(new_data[1][2]), length(new_data[1][1][1]), length(new_data[1][1]) })
+			
+			
+			--new_data[i][1]= split_any(new_data[i][1], { "; filename=\"", {34,13,10}, {34,13,10,13,10}, {34,59,32} } )
+	/*		
 			if length(new_data[i][1])=2 then 
 				puts(1, "#Debug inside an IF"& "\n<br>")
-				split(new_data[i][2], "\"; filename=\"")
+				split(new_data[i][1], "\"; filename=\"")
 			end if
-			*/
-			puts(1, "Length New_data = " & sprint(length(new_data)))
+			
+			puts(1, "Length New_data = " & sprint(length(new_data)) & "<br>\n") -- DEBUG*/
 		else
 			--Error! No Content-Disposition !
-			
+			puts(1, "Error, No Content-Disposition!!")
 		end if
 	end for
 	
+	--new_data[1] = new_data[1][1]
 	puts(1, "Length New_data = " & sprint(length(new_data)))
 	new_data = pretty_sprint(new_data)
 	new_data = match_replace("\n",new_data,"<br>")
 	
-	/*
-	for i=1 to length(new_data) do
-		new_data[i] = split(new_data[i], "; ",,1)
-	end for
-	/
-	
-
-	bytes=""
-	
-	for i=1 to length(new_data) do
-		if mod(i,2)=1 then
-			bytes = append(bytes, new_data[i])
-		end if
-	end for
-	
-	return bytes
-	*/
-	return new_data
+	--? post_fields
+	return post_fields
 end function
 
 
@@ -225,7 +289,7 @@ global function tablify(sequence data, sequence toptions="", sequence thead="", 
 		end if
 
 		--If data is one single string (one cell), expected the same from thead and tfoot
-		tabl = tabl & "<tr><td>" & data & "</td></tr>\n"
+		tabl = tabl & "<tr><td>" & data & "</td></tr>\n"   --¿Manage other cases?
 		
 		if string(tfoot) then
 		tabl = tabl & "<tfoot><td>" & tfoot & "</td></tfoot>\n"

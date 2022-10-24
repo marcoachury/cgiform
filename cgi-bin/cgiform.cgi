@@ -12,11 +12,13 @@ printf( 1, "Content-type: text/html\n\n" )
 printf( 1, "<html><head> </head><body>\n" ) 
 
 object myvars = cgi:form_data() 
+
+
 sequence s = sprint(length(myvars))
 
 
 --       html table        <table> option     -- Cells inside <thead>   -- Cells inside <tfoot>
-puts(1, cgi:tablify(myvars, "border = 1 " ,{"Field Name", "Field value"}, {"Fields found:", s} ) )
+puts(1, cgi:tablify(myvars, "border = 1 " ,{"Field Name", "Field value", "File Name"}, {"Fields found:", s} ) )
 
 sequence request_method = environ_string( "REQUEST_METHOD" ) --now also defined as global constant
 
