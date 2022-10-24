@@ -163,7 +163,7 @@ function multipart_parse()
 				
 				post_fields[i][3] = new_data[i][begin_field..end_field]
 				
-				begin_field = find({13,10,13,10}, new_data[i], end_field) +4
+				begin_field = match({13,10,13,10}, new_data[i], end_field+1) +4
 
 				post_fields[i][2] = new_data[i][begin_field..$-2]
 				
@@ -172,19 +172,6 @@ function multipart_parse()
 				--new_data[i]=new_data[i][end_field+1..$]
 			end if
 			
-			--new_data[i]= split(new_data[i], {34,13,10,13,10}) --
-
-				--	printf(1, "Length New_data 1 = %d [1] %d [2] [1][1] %d [1][2] %d [1,1,1] %d [1,1,2] %d\n<br>", { length(new_data), length(new_data[1]), length(new_data[2]), length(new_data[1][1]), length(new_data[1][2]), length(new_data[1][1][1]), length(new_data[1][1]) })
-			
-			
-			--new_data[i][1]= split_any(new_data[i][1], { "; filename=\"", {34,13,10}, {34,13,10,13,10}, {34,59,32} } )
-	/*		
-			if length(new_data[i][1])=2 then 
-				puts(1, "#Debug inside an IF"& "\n<br>")
-				split(new_data[i][1], "\"; filename=\"")
-			end if
-			
-			puts(1, "Length New_data = " & sprint(length(new_data)) & "<br>\n") -- DEBUG*/
 		else
 			--Error! No Content-Disposition !
 			puts(1, "Error, No Content-Disposition!!")
@@ -192,9 +179,9 @@ function multipart_parse()
 	end for
 	
 	--new_data[1] = new_data[1][1]
-	puts(1, "Length New_data = " & sprint(length(new_data)))
-	new_data = pretty_sprint(new_data)
-	new_data = match_replace("\n",new_data,"<br>")
+	--puts(1, "Length New_data = " & sprint(length(new_data)))
+	--new_data = pretty_sprint(new_data)
+	--new_data = match_replace("\n",new_data,"<br>")
 	
 	--? post_fields
 	return post_fields

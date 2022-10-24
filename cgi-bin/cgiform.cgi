@@ -5,6 +5,7 @@
 
 include mycgi.e as cgi
 include std/text.e
+include std/pretty.e
 
 with batch 
 
@@ -15,6 +16,13 @@ object myvars = cgi:form_data()
 
 
 sequence s = sprint(length(myvars))
+
+--For debug!
+for i=1 to length(myvars) do
+	for j=1 to length(myvars[i]) do
+		myvars[i][j]=pretty_sprint(myvars[i][j])
+	end for
+end for
 
 
 --       html table        <table> option     -- Cells inside <thead>   -- Cells inside <tfoot>
