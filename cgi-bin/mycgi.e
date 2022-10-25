@@ -1,23 +1,18 @@
 -- MyCGI.e
 -- A try to generalize the CGI form processing
 -- Marco Achury 2022
-
--- Some code from
+--
+-- Some code and ideas from:
+--
 -- LibCGI v1.6
 -- Common Gateway Interface routines for Euphoria
 -- Buddy Hyllberg <budmeister1@juno.com>
-
--- Some code from: 
+--
 -- https://openeuphoria.org/forum/136915.wc?last_id=137102
--- Greg Haberek
-
--- Multipart parser from
---LibCGI v1.5 - Common Gateway Interface routines for Euphoria
---(9.11.99) Buddy Hyllberg <budmeister1@juno.com>
-
-
-
-
+-- Greg Haberek & Jean Marc Duro
+--
+-- LibCGI v1.5 - Common Gateway Interface routines for Euphoria
+-- (9.11.99) Buddy Hyllberg <budmeister1@juno.com>
 
 include std/dll.e 
 include std/io.e 
@@ -42,16 +37,15 @@ ifdef WINDOWS then
 	function set_mode( integer fn, integer mode ) 
 		return c_func( _setmode, {fn,mode} ) 
 	end function 
-
 end ifdef
 
 -- To stablish complete set of variables?
--- To put a prefix like CGI_CONTENT_TYPE ?
+-- May be better to put a prefix like CGI_CONTENT_TYPE ?
 constant CONTENT_TYPE = environ_string("CONTENT_TYPE")
 constant CONTENT_LENGTH = to_number(environ_string("CONTENT_LENGTH"))
 constant QUERY_STRING = environ_string("QUERY_STRING")
 global constant REQUEST_METHOD = upper(environ_string("REQUEST_METHOD"))
-
+-- Is usual that appwebs check the method, that may help to detect unexpected connections.
 
 
 --Return environmental string, 
@@ -139,12 +133,12 @@ function multipart_parse()
 	
 	-- post_fields = {fieldname, content, filename}
 	sequence post_fields = {}
-	sequence field =  {{},{},{}}
+	sequence field =  {"","",""}
 	integer begin_field
 	integer end_field
 	
 	for i = 1 to length (new_data) do
-		post_fields=append(post_fields, field)
+		post_fields=append(post_fields, field) -- New empty field
 		if equal(new_data[i][1..40], "\r\nContent-Disposition: form-data; name=\"") then
 			new_data[i]= new_data[i][41..$] --Trim header
 			
@@ -178,6 +172,7 @@ function multipart_parse()
 		end if
 	end for
 	
+
 	--new_data[1] = new_data[1][1]
 	--puts(1, "Length New_data = " & sprint(length(new_data)))
 	--new_data = pretty_sprint(new_data)
@@ -227,21 +222,17 @@ function string_format(sequence raw)
 	return raw
 end function
 
-
+-- Main function to get data from Web Form
 global function form_data()
-	return cgi_data()  
+	sequence myform = cgi_data()
+	
+	-- Made printable binary files
+	
+	-- TODO: Security check. replace '<' with &gt; 
+	-- and so on to make it web safe
+	
+	return myform
 end function
-
-/*
-function table_row(sequence cells)
-		sequence row = "<tr>" 
-		for cell = 1 to length(cells) do
-			row = row & "<td>" & cells[cell] & "</td>\n"
-		end for
-		tabl = tabl & "</tr>\n"
-end function
-*/
-
 
 
 -- Function Tablify
